@@ -18,7 +18,7 @@
       "48": "icons/icon(48-48).png",
       "128": "icons/icon(128-128).png"
   },
-  "permissions": ["tabs", "storage","activeTab","tabGroups"],
+  "permissions": ["tabs", "storage","activeTab","tabGroups","identity"],
 
   "host_permissions": [
   "https://*.supabase.co/*"
