@@ -1,48 +1,150 @@
-# 🔮 Strange Tabs | v2.6 Workspace Mastery
+# Strange Tabs — Cloud-Synced Workspace Manager
 
-**Strange Tabs** is a high-performance Chrome Extension designed to turn browser clutter into organized, persistent workspaces. Built with **React** and **Tailwind CSS**, it allows power users to "snap" their current browser state into named sessions and restore them as native Chrome Tab Groups.
-
----
-
-## 🚀 Key Features
-
-* **Multiverse Saving:** Capture all active, non-pinned tabs into a single named session with one click.
-* **Native Tab Grouping:** Restores sessions directly into **Chrome Tab Groups**, preserving the session name.
-* **Clean Slate Mode:** Automates the transition between projects by saving the current context and clearing the browser state safely (preventing window closure).
-* **Selective Pruning:** Total ownership of data—remove individual URLs from a saved session without deleting the entire group.
-* **5-Second Undo Buffer:** A safety net for accidental tab removals, ensuring zero data loss during workspace cleanup.
-* **Real-time Persistence:** Built-in sync with `chrome.storage` for instant data recovery after browser restarts.
+A Chrome Extension built with React, Vite, and Tailwind CSS that helps users save browser workspaces as cloud-synchronized sessions and restore them instantly as native Chrome Tab Groups without creating duplicate tabs.
 
 ---
 
-## 🛠️ Tech Stack & Engineering Challenges
+## 🚀 Features
 
-* **Frontend:** React.js (Hooks, State Lifting), Tailwind CSS, Vite.
-* **APIs:** Chrome Extensions API (`tabs`, `storage`, `tabGroups`).
-* **Challenge Solved:** Managed **Async Lifecycle Safety** to resolve race conditions during bulk tab removals, ensuring the browser process remains active by injecting safety tabs before "sweep" operations.
-* **State Architecture:** Implemented a nested data structure to handle the relationship between sessions and individual tab metadata.
+### 📂 Workspace Saving
+Save all active non-pinned tabs into a named workspace session with a single click.
+
+### 🔄 Smart Restoration
+Before restoring a session, Strange Tabs checks the current browser window. If a saved URL is already open, it reuses the existing tab and places it into the restored group instead of creating duplicates.
+
+### 🧹 Clean Slate Protocol
+Preserve the current browsing context while safely clearing active tabs. A fallback window is maintained to prevent accidental browser closure.
+
+### ↩️ Temporal Undo Buffer
+Accidentally removed tabs can be restored within a 5-second recovery window.
+
+### ☁️ Relational Cloud Sync
+Workspace data is synchronized across devices using Supabase Authentication and PostgreSQL, enabling seamless access from anywhere.
+
+---
+
+## 🏗️ Architecture
+
+The application follows a decoupled service-based architecture to separate UI logic from browser and database operations.
+
+### Core Modules
+
+#### `App.jsx`
+- Manages application state
+- Handles authentication flow
+- Controls user routing and interactions
+
+#### `src/services/chromeService.js`
+- Encapsulates Chrome Extension APIs
+- Handles communication with:
+  - `chrome.tabs`
+  - `chrome.windows`
+  - `chrome.tabGroups`
+
+#### `src/services/sessionService.js`
+- Manages Supabase interactions
+- Performs database operations
+- Handles session synchronization
+
+#### `src/components/`
+- Contains reusable UI components
+- Receives data and actions through React props
+- Keeps presentation separate from business logic
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React.js
+- Vite
+- Tailwind CSS v4
+
+### Backend & Cloud
+- Supabase Authentication
+- PostgreSQL Database
+
+### Browser Integration
+- Chrome Extensions Manifest V3 API
 
 ---
 
 ## 📦 Installation (Development Mode)
 
-1.  Clone this repository: `git clone https://github.com/shivangi989/strange-tabs-react.git`
-2.  Install dependencies: `npm install`
-3.  Generate build: `npm run build`
-4.  Open Chrome and navigate to `chrome://extensions`.
-5.  Enable **Developer Mode** and click **Load Unpacked**.
-6.  Select the **`dist`** folder from this project.
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/shivangi989/strange-tabs-react.git
+cd strange-tabs-react
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the root directory and add:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. Build the Extension
+
+```bash
+npm run build
+```
+
+### 5. Load the Extension into Chrome
+
+1. Open Chrome and navigate to:
+
+```
+chrome://extensions/
+```
+
+2. Enable **Developer Mode** (top-right corner).
+
+3. Click **Load Unpacked**.
+
+4. Select the generated `dist/` folder.
+
+5. The extension is now ready for use.
 
 ---
 
-## 🗺️ Roadmap (Summer 2026)
+## 🗺️ Roadmap
 
-* [ ] **Multiverse Sync:** Migrating local storage to **Supabase** for cross-device session synchronization and Google Auth integration.
-* [ ] **Eye of Agamotto (AI):** Implementing Gemini API for auto-categorization and smart tagging of research sessions.
-* [ ] **Mirror Dimension:** Adding "Tab Suspending" logic to discard inactive tabs from memory to boost system performance.
+### Phase 2: AI-Powered Workspace Intelligence
+
+- [ ] Enable `pgvector` in Supabase for vector storage.
+- [ ] Extend the database schema with embedding columns.
+- [ ] Build a content extraction pipeline using isolated content scripts.
+- [ ] Collect and store meaningful page content from tabs.
+- [ ] Integrate Gemini API for semantic summarization.
+- [ ] Generate vector embeddings for saved workspaces.
+- [ ] Implement semantic search using natural language queries.
+- [ ] Enable retrieval of sessions based on conceptual similarity rather than exact keywords.
 
 ---
 
 ## 👤 Author
 
-**Shivangi Singh** *B.Tech in Engineering & Computational Mechanics, MNNIT Allahabad (2028)* [LinkedIn](https://www.linkedin.com/in/shivangi-singh-574b89331) | [GitHub](https://github.com/shivangi989)
+**Shivangi Singh**  
+B.Tech, Engineering & Computational Mechanics  
+MNNIT Allahabad (Class of 2028)
+
+### Connect With Me
+
+- GitHub: https://github.com/shivangi989
+- LinkedIn: https://www.linkedin.com/
+
+---
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
