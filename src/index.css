@@ -1,4 +1,7 @@
+/* src/index.css */
 @import "tailwindcss";
+
+@import "./assets/mysticalEffect.css";
 
 body {
   margin: 0;

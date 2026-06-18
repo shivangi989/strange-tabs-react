@@ -27,9 +27,7 @@ const handleGoogleLogin = async () => {
     const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectURL)}`
 
 
-    console.log("Redirect URL:", redirectURL)
-console.log("Auth URL:", authUrl)
-console.log("Supabase URL:", supabaseUrl)
+
 
     // ✅ FIX: Wrap callback in a Promise so we can await it
     await new Promise((resolve, reject) => {
