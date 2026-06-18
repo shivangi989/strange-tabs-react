@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-
+import Mandala from './components/common/Mandala'
 import Header from './components/layout/Header'
 import SessionList from './components/session/SessionList'
 import AuthUI from './components/auth/AuthUI'
 import TabSelector from './components/tabs/TabSelector'
-
+import Mystics from './components/common/Mystics'
 import { supabase } from './lib/supabase'
 import { chromeService } from './services/chromeService'
 import {
@@ -190,11 +190,12 @@ function App() {
 
   return (
     <div className="w-[350px] h-[550px] bg-slate-950 text-white font-sans flex flex-col relative overflow-hidden border border-orange-500/10">
+      <Mystics />
       <Header />
 
       {/* Dynamic Notification Bar */}
       {notification && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-linear-to-r from-orange-600 to-amber-600 text-[10px] uppercase tracking-widest font-bold px-4 py-1.5 rounded-full z-50 shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-linear-to-r from-orange-600 to-amber-600 text-[10px] uppercase tracking-widest font-bold px-4 py-1.5 rounded-full z-50 shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all sanctum-notify">
           {notification}
         </div>
       )}
@@ -202,8 +203,13 @@ function App() {
       <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
         {!user ? (
           <div className="flex flex-col items-center justify-center text-center py-6">
-            <div className="w-16 h-16 border-2 border-orange-500 rounded-full flex items-center justify-center mb-4 animate-pulse shadow-[0_0_20px_rgba(249,115,22,0.3)]">
-              <span className="text-2xl">👁️</span>
+            <div className="relative flex items-center justify-center mb-4">
+              <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                <Mandala size={100} opacity={0.28} />
+              </div>
+              <div className="w-16 h-16 border-2 border-orange-500 rounded-full flex items-center justify-center z-10 eye-agamotto shadow-[0_0_20px_rgba(249,115,22,0.3)]">
+                <span className="text-2xl">👁️</span>
+              </div>
             </div>
             <h2 className="text-base font-bold text-orange-400 tracking-wider mb-2">Identify Yourself, Sorcerer</h2>
             <p className="text-[11px] text-slate-400 mb-6 px-2 leading-relaxed">
@@ -220,7 +226,7 @@ function App() {
             </div>
 
             {/* Core Action Trigger */}
-            <button onClick={openSelector} className="w-full bg-linear-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 py-3 rounded-xl mb-4 font-bold text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(249,115,22,0.15)] active:scale-[0.98]">
+            <button onClick={openSelector} className="w-full bg-linear-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 py-3 rounded-xl mb-4 font-bold text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(249,115,22,0.15)] active:scale-[0.98] conjure-btn">
               Conjure Workspace
             </button>
 

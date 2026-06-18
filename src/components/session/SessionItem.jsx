@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+
 const SessionItem = ({ session, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab}) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
