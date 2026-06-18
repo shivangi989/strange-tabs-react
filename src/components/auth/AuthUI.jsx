@@ -8,65 +8,75 @@ export default function AuthUI() {
   const [isSignUp, setIsSignUp] = useState(false)
 
   // 🛠️ FIX: Extension-Safe Google OAuth handling
-  const handleGoogleLogin = async () => {
-    setLoading(true)
-    try {
-      const isExtension = typeof chrome !== "undefined" && chrome.identity
-      
-      // If running in a standard web tab during development, fallback to normal redirect
-      if (!isExtension) {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin }
-        })
-        if (error) throw error
-        return
-      }
+const handleGoogleLogin = async () => {
+  setLoading(true)
+  try {
+    const isExtension = typeof chrome !== "undefined" && chrome.identity
 
-      // --- CHROME EXTENSION SPECIFIC OAUTH FLOW ---
-      const redirectURL = chrome.identity.getRedirectURL()
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      
-      // Construct the exact Supabase OAuth endpoint URL manually
-      const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectURL)}`
+    if (!isExtension) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      })
+      if (error) throw error
+      return
+    }
 
-      // Launch an isolated secure web flow to prevent the extension popup from crashing
+    const redirectURL = chrome.identity.getRedirectURL()
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectURL)}`
+
+
+    console.log("Redirect URL:", redirectURL)
+console.log("Auth URL:", authUrl)
+console.log("Supabase URL:", supabaseUrl)
+
+    // ✅ FIX: Wrap callback in a Promise so we can await it
+    await new Promise((resolve, reject) => {
       chrome.identity.launchWebAuthFlow(
-        {
-          url: authUrl,
-          interactive: true
-        },
+        { url: authUrl, interactive: true },
         async (responseUrl) => {
           if (chrome.runtime.lastError) {
-            alert("Portal Error: " + chrome.runtime.lastError.message)
-            setLoading(false)
+            reject(new Error(chrome.runtime.lastError.message))
             return
           }
 
-          if (responseUrl) {
-            // Parse the access token and refresh token out of the returning URL URL fragment hash
+          if (!responseUrl) {
+            reject(new Error("No response URL returned from Google"))
+            return
+          }
+
+          try {
             const urlParams = new URLSearchParams(new URL(responseUrl).hash.substring(1))
             const accessToken = urlParams.get("access_token")
             const refreshToken = urlParams.get("refresh_token")
 
-            if (accessToken && refreshToken) {
-              // Inject the retrieved session tokens into Supabase memory
-              const { error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken
-              })
-              if (error) throw error
+            if (!accessToken || !refreshToken) {
+              reject(new Error("Tokens missing from redirect URL"))
+              return
             }
+
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            })
+
+            if (error) reject(error)
+            else resolve()
+
+          } catch (err) {
+            reject(err)
           }
         }
       )
+    })
 
-    } catch (err) {
-      alert("Portal collapse: " + err.message)
-    } finally {
-      setLoading(false)
-    }
+  } catch (err) {
+    alert("Portal collapse: " + err.message)
+  } finally {
+    setLoading(false) // ✅ Now this runs AFTER the callback completes
   }
+}
 
   const handleEmailAuth = async (e) => {
     e.preventDefault()
