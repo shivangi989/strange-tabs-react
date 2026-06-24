@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import EyeOfAgamotto from './components/common/EyeOfAgamotto'
 import Mandala from './components/common/Mandala'
 import Header from './components/layout/Header'
 import SessionList from './components/session/SessionList'
@@ -8,6 +9,7 @@ import TabSelector from './components/tabs/TabSelector'
 import Mystics from './components/common/Mystics'
 import { supabase } from './lib/supabase'
 import { chromeService } from './services/chromeService'
+import { useAnalytics } from './hooks/useAnalytics'
 import {
   createSession,
   fetchSessions,
@@ -25,6 +27,9 @@ function App() {
   const [notification, setNotification] = useState("")
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  
+  const { stats, trackSave, trackRestore } = useAnalytics()
+  const { sessionRestoreCounts } = stats
 
   const [showSelector, setShowSelector] = useState(false)
   const [availableTabs, setAvailableTabs] = useState([])
@@ -56,7 +61,8 @@ function App() {
           title: s.title,
           date: new Date(s.created_at).toLocaleString(),
           tabCount: s.tabs?.length || 0,
-          tabs: s.tabs || []
+          tabs: s.tabs || [],
+          restoreCount: sessionRestoreCounts[s.id] || 0
         }))
       )
     } catch (err) {
@@ -85,6 +91,7 @@ function App() {
 
       await createSession(user.id, sessionPayload)
       notify("Workspace Conjured! ✨")
+      trackSave()
       await syncWorkspaces()
 
       if (cleanSlate) {
@@ -100,6 +107,7 @@ function App() {
     if (!session) return
     await chromeService.restoreWorkspace(session.title, session.tabs)
     notify("Portals Opened! 🌀")
+    trackRestore(id)
   }
 
   const handleUngroup = async (id) => {
@@ -203,14 +211,16 @@ function App() {
       <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
         {!user ? (
           <div className="flex flex-col items-center justify-center text-center py-6">
-            <div className="relative flex items-center justify-center mb-4">
-              <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                <Mandala size={100} opacity={0.28} />
-              </div>
-              <div className="w-16 h-16 border-2 border-orange-500 rounded-full flex items-center justify-center z-10 eye-agamotto shadow-[0_0_20px_rgba(249,115,22,0.3)]">
-                <span className="text-2xl">👁️</span>
-              </div>
-            </div>
+          
+
+    {/* Replace the old eye div with this */}
+    <div className="relative flex items-center justify-center mb-6">
+      {/* <div className="absolute" style={{top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}>
+        <Mandala size={120} opacity={0.2} />
+      </div> */}
+      <EyeOfAgamotto onClick={() => {}} />
+    </div>
+            
             <h2 className="text-base font-bold text-orange-400 tracking-wider mb-2">Identify Yourself, Sorcerer</h2>
             <p className="text-[11px] text-slate-400 mb-6 px-2 leading-relaxed">
               Your digital relics cannot be synced across the multiverse without an established identity. Bind your tabs to your spirit.

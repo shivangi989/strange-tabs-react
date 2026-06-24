@@ -12,7 +12,7 @@ export default function Mystics() {
 
       {/* Bottom-right — partially visible */}
       <div style={{ position: 'absolute', bottom: -20, right: -20 }}>
-        <Mandala size={140} opacity={0.18} />
+        <Mandala size={140} opacity={0.25} />
       </div>
 
       {/* Center background glow */}

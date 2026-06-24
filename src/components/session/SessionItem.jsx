@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 
 
-const SessionItem = ({ session, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab}) => {
+const SessionItem = ({ restoreCount,session, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab,}) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    
 
     return (
         <div className='group bg-slate-900/40 border border-slate-900 hover:border-orange-500/20 rounded-xl p-3.5 transition-all shadow-sm'>
@@ -29,6 +30,12 @@ const SessionItem = ({ session, onDelete, onRestore, onRename, onRemoveTab, onUn
                             <button onClick={(e) => { e.stopPropagation(); onRemoveTab(session.id, tab.url); }} className="text-red-400/70 hover:text-red-400 text-[9px] uppercase font-mono tracking-tighter opacity-0 group-hover/tab:opacity-100 transition-opacity">Banish</button>
                         </div>
                     ))}
+                     
+                        {restoreCount > 0 && (
+                        <span className="text-[8px] text-amber-500/60 font-mono">
+                            ⟳ {restoreCount}x restored
+                        </span>
+                        )}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onAppendTab(session.id); }}
                         className="text-[9px] text-amber-500 border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500 hover:text-white transition-all py-1.5 rounded-lg font-mono font-bold tracking-wider uppercase mb-1"

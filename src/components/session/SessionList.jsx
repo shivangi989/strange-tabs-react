@@ -24,6 +24,7 @@ export default function SessionList({ sessions, onDelete, onRestore, onRename, o
           onUngroup={onUngroup}
           onCloseGroup={onCloseGroup}
           onAppendTab={onAppendTab}
+          restoreCount={session.restoreCount}
         />
       ))}
     </div>
