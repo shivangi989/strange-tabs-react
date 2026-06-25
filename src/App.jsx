@@ -240,6 +240,22 @@ function App() {
               Conjure Workspace
             </button>
 
+            {/* ── TEMPORARY TEST BUTTON — remove after testing ── */}
+            <button
+              onClick={async () => {
+                console.log("Testing Edge Function...")
+                const { data, error } = await supabase.functions.invoke('ai-process', {
+                  body: { action: 'embed', text: 'React hooks tutorial' }
+                })
+                console.log("Data:", data)
+                console.log("Error:", error)
+              }}
+              className="w-full text-xs text-yellow-400 border border-yellow-400/30 p-2 rounded-xl mb-4"
+            >
+              TEST EDGE FUNCTION
+            </button>
+            {/* ── END TEMPORARY ── */}
+
             {/* Protocol Settings Switch */}
             <div className="flex items-center justify-between px-3 py-2.5 mb-4 bg-slate-900/20 rounded-xl border border-slate-800/50">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Clean Slate Protocol</span>
