@@ -13,42 +13,36 @@ export const chromeService = {
   },
 
   // SMART RESTORATION: Groups existing tabs instead of duplicating them
-  restoreWorkspace: async (title, sessionTabs) => {
-    if (typeof chrome === "undefined" || !chrome.tabs) return;
+restoreWorkspace: async (title, sessionTabs, color = "orange") => {
+  if (typeof chrome === "undefined" || !chrome.tabs) return;
 
-    // 1. Get all currently open tabs in the window
-    const currentTabs = await new Promise((resolve) => {
-      chrome.tabs.query({ currentWindow: true }, resolve);
-    });
+  const currentTabs = await new Promise((resolve) => {
+    chrome.tabs.query({ currentWindow: true }, resolve);
+  });
 
-    const finalTabIds = [];
+  const finalTabIds = [];
 
-    // 2. Loop through the session tabs we want to restore
-    for (const sTab of sessionTabs) {
-      // Check if this URL is already open in an UNGROUPED state
-      const existingTab = currentTabs.find(
-        t => t.url === sTab.url && (t.groupId === -1 || !t.groupId)
-      );
+  for (const sTab of sessionTabs) {
+    const existingTab = currentTabs.find(
+      t => t.url === sTab.url && (t.groupId === -1 || !t.groupId)
+    );
 
-      if (existingTab) {
-        // Use the existing tab instead of creating a duplicate
-        finalTabIds.push(existingTab.id);
-      } else {
-        // If it's not open, create a new one
-        const newTab = await new Promise((resolve) => {
-          chrome.tabs.create({ url: sTab.url, active: false }, resolve);
-        });
-        finalTabIds.push(newTab.id);
-      }
-    }
-
-    // 3. Atomically group our clean list of IDs
-    return new Promise((resolve) => {
-      chrome.tabs.group({ tabIds: finalTabIds }, (groupId) => {
-        chrome.tabGroups.update(groupId, { title, color: "orange" }, () => resolve(groupId));
+    if (existingTab) {
+      finalTabIds.push(existingTab.id);
+    } else {
+      const newTab = await new Promise((resolve) => {
+        chrome.tabs.create({ url: sTab.url, active: false }, resolve);
       });
+      finalTabIds.push(newTab.id);
+    }
+  }
+
+  return new Promise((resolve) => {
+    chrome.tabs.group({ tabIds: finalTabIds }, (groupId) => {
+      chrome.tabGroups.update(groupId, { title, color }, () => resolve(groupId));
     });
-  },
+  });
+},
 
   clearWorkspace: (tabIds) => {
     if (typeof chrome === "undefined" || !chrome.tabs) return;

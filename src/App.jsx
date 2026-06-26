@@ -22,6 +22,9 @@ import {
 } from './services/sessionService'
 import StrangeSearch from './components/search/StrangeSearch'
 import { updateSessionColor } from './services/sessionService'
+import { SESSION_COLORS } from './components/common/sessionColors'
+
+
 
 function App() {
   // ---------------- STATE ----------------
@@ -90,7 +93,10 @@ function App() {
   const handleRestore = async (id) => {
     const session = sessions.find(s => s.id === id)
     if (!session) return
-    await chromeService.restoreWorkspace(session.title, session.tabs)
+
+    const chromeColor = SESSION_COLORS[session.color]?.chrome || 'orange'
+
+    await chromeService.restoreWorkspace(session.title, session.tabs, chromeColor)
     notify("Portals Opened! 🌀")
     trackRestore(id)
   }
