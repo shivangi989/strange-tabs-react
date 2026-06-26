@@ -16,8 +16,12 @@ import {
   renameSession,
   deleteSession,
   updateTabs,
-  appendTabToSession
+  appendTabToSession,
+  enrichTabsWithAI,
+  searchTabsSemantically 
 } from './services/sessionService'
+import StrangeSearch from './components/search/StrangeSearch'
+import { updateSessionColor } from './services/sessionService'
 
 function App() {
   // ---------------- STATE ----------------
@@ -62,7 +66,8 @@ function App() {
           date: new Date(s.created_at).toLocaleString(),
           tabCount: s.tabs?.length || 0,
           tabs: s.tabs || [],
-          restoreCount: sessionRestoreCounts[s.id] || 0
+          restoreCount: sessionRestoreCounts[s.id] || 0,
+          color: s.color || 'orange' 
         }))
       )
     } catch (err) {
@@ -80,27 +85,7 @@ function App() {
   }
 
   // ---------------- OPERATIONS ----------------
-  const handleSave = async (tabs) => {
-    if (!tabs || tabs.length === 0) return
-    try {
-      const targetIds = tabs.map(t => t.id)
-      const sessionPayload = {
-        title: `Timeline Workspace ${sessions.length + 1}`,
-        tabs: tabs.map(t => ({ url: t.url, title: t.title }))
-      }
 
-      await createSession(user.id, sessionPayload)
-      notify("Workspace Conjured! ✨")
-      trackSave()
-      await syncWorkspaces()
-
-      if (cleanSlate) {
-        chromeService.clearWorkspace(targetIds)
-      }
-    } catch (err) {
-      console.error("Save Error:", err.message)
-    }
-  }
 
   const handleRestore = async (id) => {
     const session = sessions.find(s => s.id === id)
@@ -190,6 +175,63 @@ function App() {
     });
   }
 
+  const handleSave = async (tabs) => {
+  if (!tabs || tabs.length === 0) return
+  try {
+    const sessionPayload = {
+      title: `Timeline Workspace ${sessions.length + 1}`,
+      tabs: tabs.map(t => ({ url: t.url, title: t.title }))
+    }
+
+    const newSession = await createSession(user.id, sessionPayload)
+    notify("Workspace Conjured! ✨")
+    trackSave()
+    await syncWorkspaces()
+
+    if (cleanSlate) {
+      chromeService.clearWorkspace(tabs.map(t => t.id))
+    }
+
+    // ── AI enrichment — fire and forget, don't block UI ──
+    if (newSession?.tabs) {
+      const tabsWithContent = await Promise.all(
+        newSession.tabs.map(savedTab => {
+          const originalTab = tabs.find(t => t.url === savedTab.url)
+          return new Promise((resolve) => {
+            if (!originalTab?.id) return resolve({ ...savedTab, content: '' })
+              const timeout = setTimeout(() => resolve({ ...savedTab, content: '' }), 2000)
+            chrome.tabs.sendMessage(originalTab.id, { type: 'EXTRACT_CONTENT' }, (response) => {
+              clearTimeout(timeout)
+                  // ✅ Read lastError explicitly — this SILENCES the console warning
+                  if (chrome.runtime.lastError) {
+                    // No content script in this tab — that's fine, just use empty content
+                    resolve({ id: savedTab.id, title: savedTab.title, url: savedTab.url, content: '' })
+                    return
+                  }
+              resolve({ id: savedTab.id, title: savedTab.title, url: savedTab.url, content: response?.content || '' })
+            })
+          })
+        })
+      )
+     
+      enrichTabsWithAI(tabsWithContent) // don't await — runs in background
+    }
+
+  } catch (err) {
+    console.error("Save Error:", err.message)
+  }
+}
+
+const handleColorChange = async (sessionId, color) => {
+  try {
+    await updateSessionColor(sessionId, color)
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, color } : s))
+  } catch (err) {
+    console.error("Color change failed:", err.message)
+  }
+}
+
+
   if (loading) return (
     <div className="w-[350px] h-[550px] bg-slate-950 border border-orange-500/20 flex items-center justify-center text-orange-400 font-mono tracking-widest text-xs">
       CONSULTING THE SANCTUM...
@@ -212,8 +254,6 @@ function App() {
         {!user ? (
           <div className="flex flex-col items-center justify-center text-center py-6">
           
-
-    {/* Replace the old eye div with this */}
     <div className="relative flex items-center justify-center mb-6">
       {/* <div className="absolute" style={{top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}>
         <Mandala size={120} opacity={0.2} />
@@ -240,21 +280,6 @@ function App() {
               Conjure Workspace
             </button>
 
-            {/* ── TEMPORARY TEST BUTTON — remove after testing ── */}
-            <button
-              onClick={async () => {
-                console.log("Testing Edge Function...")
-                const { data, error } = await supabase.functions.invoke('ai-process', {
-                  body: { action: 'embed', text: 'React hooks tutorial' }
-                })
-                console.log("Data:", data)
-                console.log("Error:", error)
-              }}
-              className="w-full text-xs text-yellow-400 border border-yellow-400/30 p-2 rounded-xl mb-4"
-            >
-              TEST EDGE FUNCTION
-            </button>
-            {/* ── END TEMPORARY ── */}
 
             {/* Protocol Settings Switch */}
             <div className="flex items-center justify-between px-3 py-2.5 mb-4 bg-slate-900/20 rounded-xl border border-slate-800/50">
@@ -272,6 +297,8 @@ function App() {
               </div>
             )}
 
+            <StrangeSearch userId={user.id} />
+
             {/* Render Presentational Component Grid List */}
             <SessionList
               sessions={sessions}
@@ -282,6 +309,7 @@ function App() {
               onUngroup={handleUngroup}
               onCloseGroup={handleCloseGroup}
               onAppendTab={handleAppendCurrentTab}
+              onColorChange={handleColorChange}
             />
 
             {/* Presentational Modal Mount */}

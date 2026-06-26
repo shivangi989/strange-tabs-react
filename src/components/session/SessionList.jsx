@@ -1,7 +1,7 @@
 import React from 'react'
 import SessionItem from "./SessionItem"
 
-export default function SessionList({ sessions, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab}) {
+export default function SessionList({ sessions, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab, onColorChange}) {
   if (sessions.length === 0) {
     return (
       <div className="text-center py-12 bg-slate-900/10 border border-dashed border-slate-900 rounded-2xl">
@@ -25,6 +25,7 @@ export default function SessionList({ sessions, onDelete, onRestore, onRename, o
           onCloseGroup={onCloseGroup}
           onAppendTab={onAppendTab}
           restoreCount={session.restoreCount}
+          onColorChange={onColorChange}
         />
       ))}
     </div>

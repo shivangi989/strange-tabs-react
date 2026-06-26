@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
+import { SESSION_COLORS } from '../../components/common/sessionColors'
 
-
-const SessionItem = ({ restoreCount,session, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab,}) => {
+const SessionItem = ({ restoreCount,session, onDelete, onRestore, onRename, onRemoveTab, onUngroup, onCloseGroup ,onAppendTab,onColorChange }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    
+    const [showColorPicker, setShowColorPicker] = useState(false)
+    const currentColor = SESSION_COLORS[session.color] || SESSION_COLORS.orange
+
 
     return (
         <div className='group bg-slate-900/40 border border-slate-900 hover:border-orange-500/20 rounded-xl p-3.5 transition-all shadow-sm'>
             <div className='flex justify-between items-center'>
+
+            {/* ── Color dot trigger ── */}
+            <button
+                onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker) }}
+                className={`w-2.5 h-2.5 rounded-full ${currentColor.dot} shrink-0 hover:scale-125 transition-transform`}
+                title="Change color"
+            />
                 <div onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer flex-1 min-w-0 pr-2">
                     <h3 className='text-slate-200 font-bold text-xs truncate group-hover:text-orange-400/90 transition-colors tracking-wide'>{session?.title}</h3>
                     <p className='text-slate-600 font-mono text-[8px] mt-0.5 uppercase tracking-tighter'>{session?.date} • {session?.tabCount} Anchors</p>
@@ -21,6 +30,25 @@ const SessionItem = ({ restoreCount,session, onDelete, onRestore, onRename, onRe
                     </button>
                 </div>
             </div>
+
+
+            {/* ── Color picker dropdown ── */}
+            {showColorPicker && (
+                <div className="flex gap-2 mt-2 p-2 bg-slate-950/60 rounded-lg border border-slate-800/50 animate-fade-in">
+                {Object.entries(SESSION_COLORS).map(([name, { dot }]) => (
+                    <button
+                    key={name}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onColorChange(session.id, name)
+                        setShowColorPicker(false)
+                    }}
+                    className={`w-5 h-5 rounded-full ${dot} hover:scale-125 transition-transform ${session.color === name ? 'ring-2 ring-white/60' : ''}`}
+                    title={name}
+                    />
+                ))}
+                </div>
+            )}
 
             {isExpanded && (
                 <div className="mt-3 pt-3 border-t border-slate-900 space-y-1.5 animate-fade-in">

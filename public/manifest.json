@@ -22,5 +22,12 @@
 
   "host_permissions": [
   "https://*.supabase.co/*"
-  ]
+  ],
+  "content_scripts": [
+  {
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["contentScript.js"],
+    "run_at": "document_idle"
+  }
+]
 }
