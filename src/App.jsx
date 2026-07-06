@@ -21,7 +21,7 @@ import {
   searchTabsSemantically 
 } from './services/sessionService'
 import StrangeSearch from './components/search/StrangeSearch'
-import { updateSessionColor } from './services/sessionService'
+import {updateSessionColor,updateSessionGroupId, updateSessionFromBrowser } from './services/sessionService'
 import { SESSION_COLORS } from './components/common/sessionColors'
 
 
@@ -70,7 +70,8 @@ function App() {
           tabCount: s.tabs?.length || 0,
           tabs: s.tabs || [],
           restoreCount: sessionRestoreCounts[s.id] || 0,
-          color: s.color || 'orange' 
+          color: s.color || 'orange',
+          chrome_group_id: s.chrome_group_id || null  
         }))
       )
     } catch (err) {
@@ -87,19 +88,47 @@ function App() {
     setTimeout(() => setNotification(""), 3000)
   }
 
+// ── Add the live sync listener — runs once when user logs in ──
+useEffect(() => {
+  if (!user) return;
+
+  const cleanup = chromeService.initGroupSyncListener(async ({ chromeGroupId, title, color }) => {
+    // Find which session this browser group belongs to
+    const matchingSession = sessions.find(s => s.chrome_group_id === chromeGroupId)
+    if (!matchingSession) return; // not one of our tracked sessions, ignore
+
+    try {
+      await updateSessionFromBrowser(matchingSession.id, { title, color })
+      setSessions(prev => prev.map(s => 
+        s.id === matchingSession.id ? { ...s, title, color } : s
+      ))
+      notify("Synced from browser ✦")
+    } catch (err) {
+      console.error("Browser sync failed:", err.message)
+    }
+  })
+
+  return cleanup // removes listener when component unmounts
+}, [user, sessions])
+
   // ---------------- OPERATIONS ----------------
 
 
-  const handleRestore = async (id) => {
-    const session = sessions.find(s => s.id === id)
-    if (!session) return
+const handleRestore = async (id) => {
+  const session = sessions.find(s => s.id === id)
+  if (!session) return
 
-    const chromeColor = SESSION_COLORS[session.color]?.chrome || 'orange'
+  const chromeColor = SESSION_COLORS[session.color]?.chrome || 'orange'
+  const groupId = await chromeService.restoreWorkspace(session.title, session.tabs, chromeColor)
 
-    await chromeService.restoreWorkspace(session.title, session.tabs, chromeColor)
-    notify("Portals Opened! 🌀")
-    trackRestore(id)
+  if (groupId) {
+    await updateSessionGroupId(id, groupId)
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, chrome_group_id: groupId } : s))
   }
+
+  notify("Portals Opened! 🌀")
+  trackRestore(id)
+}
 
   const handleUngroup = async (id) => {
     const session = sessions.find(s => s.id === id)
@@ -190,8 +219,20 @@ function App() {
     }
 
     const newSession = await createSession(user.id, sessionPayload)
+    
     notify("Workspace Conjured! ✨")
     trackSave()
+
+      // ✅ Immediately group the actual browser tabs, capture the groupId
+    const groupId = await chromeService.groupCurrentTabs(
+      tabs.map(t => t.id), 
+      sessionPayload.title, 
+      'orange'
+    )
+    if (groupId) {
+      await updateSessionGroupId(newSession.id, groupId)
+    }
+
     await syncWorkspaces()
 
     if (cleanSlate) {

@@ -1,4 +1,4 @@
-import { processTab ,generateEmbedding} from './aiService.js'
+import { processTab ,generateEmbedding, processTabsBatched} from './aiService.js'
 import { supabase } from '../lib/supabase'
 
 
@@ -36,6 +36,7 @@ export async function fetchSessions(userId) {
       title,
       created_at,
       color,
+      chrome_group_id,
       tabs (id, url, title)
     `)
     .eq('user_id', userId)
@@ -97,27 +98,27 @@ export async function appendTabToSession(sessionId, tabTitle, tabUrl) {
 
 
 export const enrichTabsWithAI = async (tabsWithContent) => {
-  // tabsWithContent: [{ id, title, url, content }]
-  const results = tabsWithContent.map(async (tab) => {
-    const aiData = await processTab({
-      content: tab.content || '',
-      title: tab.title || '',
-      url: tab.url
-    })
+  console.log('[enrichAI] called with', tabsWithContent.length, 'tabs')
+  console.log('[enrichAI] first tab content preview:', tabsWithContent[0]?.content?.slice(0, 100))
+  
+  const enrichedTabs = await processTabsBatched(tabsWithContent, 3, 1500)
+
+  const updatePromises = enrichedTabs.map(async (tab) => {
+    console.log('[enrichAI] updating tab', tab.id, '— summary:', tab.summary?.slice(0, 50), '— hasEmbedding:', !!tab.embedding)
+    
     const { error } = await supabase
       .from('tabs')
       .update({
-        summary: aiData.summary,
-        embedding: aiData.embedding,
-        raw_content: aiData.raw_content
+        summary: tab.summary,
+        embedding: tab.embedding,
+        raw_content: tab.raw_content
       })
       .eq('id', tab.id)
 
-    if (error) console.error('[sessionService] enrich failed for tab:', tab.id, error)
-    return { ...tab, ...aiData }
+    if (error) console.error('[enrichAI] supabase update error:', error)
   })
 
-  return Promise.allSettled(results)
+  return Promise.allSettled(updatePromises)
 }
 
 
@@ -144,6 +145,22 @@ export async function updateSessionColor(sessionId, color) {
   const { error } = await supabase
     .from('sessions')
     .update({ color })
+    .eq('id', sessionId)
+  if (error) throw error
+}
+
+export async function updateSessionFromBrowser(sessionId, { title, color }) {
+  const { error } = await supabase
+    .from('sessions')
+    .update({ title, color })
+    .eq('id', sessionId)
+  if (error) throw error
+}
+
+export async function updateSessionGroupId(sessionId, chromeGroupId) {
+  const { error } = await supabase
+    .from('sessions')
+    .update({ chrome_group_id: chromeGroupId })
     .eq('id', sessionId)
   if (error) throw error
 }

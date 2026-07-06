@@ -2,6 +2,15 @@
 import { supabase } from '../lib/supabase'
 
 export const summarizeContent = async (content, title, url) => {
+    const hasRealContent = content && content.trim().length >= 50
+    const prompt = hasRealContent
+      ? `Summarize this page in exactly 2 sentences. Never apologize or say you cannot summarize — if the content seems incomplete, summarize whatever is present and infer the rest from the title.
+    Title: ${title}
+    URL: ${url}
+    Content: ${content}`
+      : `Based ONLY on this page's title and URL, write exactly 1 confident sentence describing what this page is likely about. Never say "I cannot" or apologize — always provide your best inference.
+    Title: ${title}
+    URL: ${url}`
   try {
     const { data, error } = await supabase.functions.invoke('ai-process', {
       body: { action: 'summarize', content, title, url }
@@ -28,26 +37,75 @@ export const generateEmbedding = async (text) => {
 }
 
 export const processTab = async ({ content, title, url }) => {
-  // Skip AI entirely for blank/internal pages — nothing meaningful to embed
-  const isJunkPage = !content || content.trim().length < 30 || url?.startsWith('chrome://')
+  console.log('[processTab] processing:', title?.slice(0, 40), '| content length:', content?.length)
   
+  const isJunkPage = !title || url?.startsWith('chrome://')
   if (isJunkPage) {
-    return {
-      summary: `Saved tab: ${title || 'Untitled'}`,
-      embedding: null,  // ← null means search_tabs SQL excludes it automatically
-      raw_content: content || ''
-    }
+    console.log('[processTab] junk page, skipping')
+    return { summary: `Saved tab: ${title}`, embedding: null, raw_content: content || '' }
   }
 
-  const textToEmbed = `${title} ${url} ${content}`.slice(0, 2000)
+  // ✅ Title + URL repeated for emphasis, content appended as supplementary context
+  // This ensures even if content extraction is noisy/empty, 
+  // the embedding still captures strong signal from title/url
+  const cleanContent = (content || '').trim()
+  const textToEmbed = `${title}. ${title}. ${url}. ${cleanContent}`.slice(0, 2000)
+
   try {
     const [summary, embedding] = await Promise.all([
-      summarizeContent(content, title, url),
+      summarizeContent(cleanContent, title, url),
       generateEmbedding(textToEmbed)
     ])
-    return { summary, embedding, raw_content: content }
+    return { summary, embedding, raw_content: cleanContent }
   } catch (err) {
     console.error('[aiService] processTab failed:', err)
-    return { summary: `Saved tab: ${title}`, embedding: null, raw_content: content }
+    // ✅ Even on total failure, still embed title+url alone as last resort
+    const fallbackEmbedding = await generateEmbedding(`${title}. ${url}`).catch(() => null)
+    return { 
+      summary: `Saved tab: ${title}`, 
+      embedding: fallbackEmbedding, 
+      raw_content: cleanContent 
+    }
   }
+}
+
+// src/services/aiService.js — add this batching utility
+
+// Process tabs in small batches instead of all-at-once,
+// to respect Gemini's rate limits and avoid silent mass-failure
+export const processTabsBatched = async (tabsWithContent, batchSize = 3, delayMs = 1500) => {
+  const results = []
+  
+  for (let i = 0; i < tabsWithContent.length; i += batchSize) {
+    const batch = tabsWithContent.slice(i, i + batchSize)
+    
+    const batchResults = await Promise.all(
+      batch.map(async (tab) => {
+        const aiData = await processTabWithRetry(tab)
+        return { ...tab, ...aiData }
+      })
+    )
+    
+    results.push(...batchResults)
+    
+    // Wait between batches so we don't hammer Gemini's rate limit
+    if (i + batchSize < tabsWithContent.length) {
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+  
+  return results
+}
+
+// Single tab processing with one retry on failure
+const processTabWithRetry = async (tab, attempt = 1) => {
+  const result = await processTab(tab)
+  
+  // If embedding failed and we haven't retried yet, try once more after a short delay
+  if (!result.embedding && attempt === 1) {
+    await new Promise(r => setTimeout(r, 2000))
+    return processTab(tab)
+  }
+  
+  return result
 }
