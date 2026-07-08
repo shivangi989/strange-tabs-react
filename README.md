@@ -1,150 +1,407 @@
-# Strange Tabs — Cloud-Synced Workspace Manager
+# Strange Tabs — AI-Powered Cloud Workspace Manager
 
-A Chrome Extension built with React, Vite, and Tailwind CSS that helps users save browser workspaces as cloud-synchronized sessions and restore them instantly as native Chrome Tab Groups without creating duplicate tabs.
+Strange Tabs is a browser extension that transforms browser tabs into intelligent, cloud-synchronized workspaces.
 
----
-
-## 🚀 Features
-
-### 📂 Workspace Saving
-Save all active non-pinned tabs into a named workspace session with a single click.
-
-### 🔄 Smart Restoration
-Before restoring a session, Strange Tabs checks the current browser window. If a saved URL is already open, it reuses the existing tab and places it into the restored group instead of creating duplicates.
-
-### 🧹 Clean Slate Protocol
-Preserve the current browsing context while safely clearing active tabs. A fallback window is maintained to prevent accidental browser closure.
-
-### ↩️ Temporal Undo Buffer
-Accidentally removed tabs can be restored within a 5-second recovery window.
-
-### ☁️ Relational Cloud Sync
-Workspace data is synchronized across devices using Supabase Authentication and PostgreSQL, enabling seamless access from anywhere.
+Instead of simply saving tabs, Strange Tabs organizes them into native browser Tab Groups, synchronizes them across devices using Supabase, and uses AI to summarize page content, generate vector embeddings, and enable semantic search across previously saved workspaces.
 
 ---
 
-## 🏗️ Architecture
+# ✨ Features
 
-The application follows a decoupled service-based architecture to separate UI logic from browser and database operations.
+## 📂 Save Browser Workspaces
 
-### Core Modules
+Save all active non-pinned tabs as a workspace with a single click.
 
-#### `App.jsx`
-- Manages application state
-- Handles authentication flow
-- Controls user routing and interactions
+Each workspace stores:
 
-#### `src/services/chromeService.js`
-- Encapsulates Chrome Extension APIs
-- Handles communication with:
-  - `chrome.tabs`
-  - `chrome.windows`
-  - `chrome.tabGroups`
-
-#### `src/services/sessionService.js`
-- Manages Supabase interactions
-- Performs database operations
-- Handles session synchronization
-
-#### `src/components/`
-- Contains reusable UI components
-- Receives data and actions through React props
-- Keeps presentation separate from business logic
+- Tab title
+- URL
+- AI summary
+- Raw extracted page content
+- Vector embedding
 
 ---
 
-## 🛠️ Tech Stack
+## 🧠 AI-Powered Workspace Intelligence
 
-### Frontend
-- React.js
+Every saved tab is automatically processed in the background.
+
+The AI pipeline:
+
+- Extracts readable page content
+- Generates concise summaries using Gemini
+- Creates semantic embeddings
+- Stores embeddings in PostgreSQL using pgvector
+
+This enables intelligent search instead of traditional keyword matching.
+
+---
+
+## 🔍 Semantic Search
+
+Search using natural language.
+
+Example searches:
+
+- "React authentication"
+- "LeetCode binary search"
+- "Machine learning notes"
+- "Vacation planning"
+
+Instead of matching keywords, Strange Tabs finds conceptually similar workspaces using vector similarity search.
+
+---
+
+## 🔄 Smart Restoration
+
+When restoring a workspace:
+
+- Existing open tabs are reused
+- Duplicate tabs are avoided
+- Missing tabs are recreated automatically
+- Tabs are restored as native browser Tab Groups
+
+---
+
+## ☁️ Cloud Synchronization
+
+Workspaces are synchronized through Supabase.
+
+Users can:
+
+- Sign in once
+- Access workspaces across browsers
+- Restore sessions from any supported installation
+
+(Currently tested on Chrome and Microsoft Edge.)
+
+---
+
+## 🔐 Secure Authentication
+
+Authentication is handled by Supabase Auth.
+
+Features include:
+
+- Secure session management
+- Protected Edge Functions
+- Server-side AI requests
+- No Gemini API key exposed to the client
+
+---
+
+## 🧹 Clean Slate Protocol
+
+Optionally remove restored tabs after saving while keeping the browser alive with a safe fallback tab.
+
+---
+
+## ↩️ Temporal Undo Buffer
+
+Accidentally remove a tab?
+
+Restore it within a 5-second recovery window.
+
+---
+
+## 🎨 Native Tab Group Support
+
+Each workspace restores as a real browser Tab Group.
+
+Supports:
+
+- Group restoration
+- Group rename
+- Color synchronization
+- Ungroup
+- Close group
+
+---
+
+## 🔄 Browser Sync
+
+Changes made directly inside native browser Tab Groups (title/color) are synchronized back to the cloud automatically.
+
+---
+
+## 📑 Selective Workspace Saving
+
+Before saving, users can:
+
+- View all available tabs
+- Ignore already-grouped tabs
+- Select only desired tabs
+
+---
+
+# 🏗️ Architecture
+
+The project follows a modular service-oriented architecture.
+
+```
+src
+│
+├── extractors
+│   ├── fallbackExtractor.js
+│   ├── index.js
+│   ├── readabilityExtractor.js
+│   ├── semanticExtractor.js
+│  
+├── components
+│   ├── auth
+│   ├── common
+│   ├── layout
+│   ├── search
+│   ├── session
+│   └── tabs
+│
+├── hooks
+│   ├── useAnalytics.js
+│   └── ...
+│
+├── services
+│   ├── aiService.js
+│   ├── chromeService.js
+│   ├── sessionService.js
+│   └── syncService.js
+│
+├── lib
+│   └── supabase.js
+│
+└── App.jsx
+```
+
+### Responsibilities
+
+### App.jsx
+
+- Authentication flow
+- State management
+- UI orchestration
+- Workspace lifecycle
+
+### chromeService.js
+
+Encapsulates all browser APIs.
+
+Responsible for:
+
+- chrome.tabs
+- chrome.tabGroups
+- chrome.windows
+- native browser synchronization
+
+---
+
+### sessionService.js
+
+Responsible for:
+
+- CRUD operations
+- Supabase communication
+- pgvector queries
+- Workspace synchronization
+
+---
+
+### aiService.js
+
+Responsible for:
+
+- Calling Supabase Edge Functions
+- AI summarization
+- Embedding generation
+- Batch processing
+- Retry handling
+
+---
+
+### Supabase Edge Function
+
+Acts as the secure backend.
+
+Responsibilities:
+
+- User authentication verification
+- Gemini API communication
+- Summary generation
+- Embedding generation
+- AI workspace naming
+
+No AI API keys are exposed to the browser.
+
+---
+
+# ⚙️ Tech Stack
+
+## Frontend
+
+- React
 - Vite
 - Tailwind CSS v4
 
-### Backend & Cloud
-- Supabase Authentication
-- PostgreSQL Database
+## Backend
 
-### Browser Integration
-- Chrome Extensions Manifest V3 API
+- Supabase Edge Functions (Deno)
+
+## Database
+
+- PostgreSQL
+- pgvector
+
+## Authentication
+
+- Supabase Auth
+
+## AI
+
+- Gemini 2.5 Flash
+- Gemini Embedding Model
+
+## Browser APIs
+
+- Chrome Extensions Manifest V3
+- chrome.tabs
+- chrome.tabGroups
+- chrome.storage
 
 ---
 
-## 📦 Installation (Development Mode)
+# 🚀 Installation
 
-### 1. Clone the Repository
+## Clone Repository
 
 ```bash
 git clone https://github.com/shivangi989/strange-tabs-react.git
 cd strange-tabs-react
 ```
 
-### 2. Install Dependencies
+---
+
+## Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
+---
 
-Create a `.env` file in the root directory and add:
+## Configure Environment Variables
+
+Create a `.env` file.
 
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=YOUR_PROJECT_URL
+VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 ```
 
-### 4. Build the Extension
+Gemini API keys are stored securely inside Supabase Edge Functions and are **not** required in the frontend.
+
+---
+
+## Build
 
 ```bash
 npm run build
 ```
 
-### 5. Load the Extension into Chrome
+---
 
-1. Open Chrome and navigate to:
+## Load Extension
+
+Open
 
 ```
-chrome://extensions/
+chrome://extensions
 ```
 
-2. Enable **Developer Mode** (top-right corner).
+Enable
 
-3. Click **Load Unpacked**.
+- Developer Mode
 
-4. Select the generated `dist/` folder.
+Click
 
-5. The extension is now ready for use.
+```
+Load Unpacked
+```
 
----
+Select
 
-## 🗺️ Roadmap
-
-### Phase 2: AI-Powered Workspace Intelligence
-
-- [ ] Enable `pgvector` in Supabase for vector storage.
-- [ ] Extend the database schema with embedding columns.
-- [ ] Build a content extraction pipeline using isolated content scripts.
-- [ ] Collect and store meaningful page content from tabs.
-- [ ] Integrate Gemini API for semantic summarization.
-- [ ] Generate vector embeddings for saved workspaces.
-- [ ] Implement semantic search using natural language queries.
-- [ ] Enable retrieval of sessions based on conceptual similarity rather than exact keywords.
+```
+dist/
+```
 
 ---
 
-## 👤 Author
+# 📊 Current Capabilities
 
-**Shivangi Singh**  
-B.Tech, Engineering & Computational Mechanics  
-MNNIT Allahabad (Class of 2028)
+✅ Cloud-synchronized workspaces
 
-### Connect With Me
+✅ Native browser Tab Groups
 
-- GitHub: https://github.com/shivangi989
-- LinkedIn: https://www.linkedin.com/
+✅ Smart restoration without duplicates
+
+✅ AI-generated summaries
+
+✅ Semantic search
+
+✅ Vector embeddings
+
+✅ Secure authentication
+
+✅ Cross-browser support (Chrome & Microsoft Edge)
 
 ---
 
-## 📄 License
+# 🛣️ Roadmap
 
-This project is open-source and available under the MIT License.
+### Phase 1
+
+- [x] Workspace Manager
+- [x] Cloud Synchronization
+- [x] Authentication
+- [x] Smart Restore
+- [x] Native Tab Groups
+
+---
+
+### Phase 2
+
+- [x] AI Summaries
+- [x] Embeddings
+- [x] Semantic Search
+- [x] Edge Function Backend
+
+---
+
+### Phase 3
+
+- [ ] AI-generated workspace names
+- [ ] Workspace recommendations
+- [ ] Similar workspace detection
+- [ ] Automatic workspace clustering
+
+
+---
+
+# 👤 Author
+
+**Shivangi Singh**
+
+B.Tech — Engineering & Computational Mechanics
+
+Motilal Nehru National Institute of Technology Allahabad
+
+Class of 2028
+
+GitHub:
+https://github.com/shivangi989
+
+LinkedIn:
+https://www.linkedin.com/in/shivangisingh98/
+
+---
+
+# 📄 License
+
+Licensed under the MIT License.
