@@ -13,8 +13,11 @@ export default defineConfig({
       },
       output: {
         entryFileNames: (chunk) => {
-          return chunk.name === 'contentScript' ? 'contentScript.js' : 'assets/[name]-[hash].js'
-        }
+          if (chunk.name === 'contentScript') return 'contentScript.js'
+          return 'assets/[name]-[hash].js'
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     }
   },
